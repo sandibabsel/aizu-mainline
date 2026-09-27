@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Ryujinx Team and Contributors
 // SPDX-License-Identifier: MIT
 
+#include <cstring>
 #include <array>
 #include <bit>
 

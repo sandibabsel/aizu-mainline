@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "core/file_sys/errors.h"
 #include "core/file_sys/fssystem/fssystem_bucket_tree.h"
 #include "core/file_sys/fssystem/fssystem_bucket_tree_utils.h"

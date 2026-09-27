@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "core/file_sys/fssystem/fssystem_bucket_tree.h"
 
 namespace FileSys::impl {

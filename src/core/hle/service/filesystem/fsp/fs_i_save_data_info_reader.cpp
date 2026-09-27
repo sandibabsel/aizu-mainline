@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "common/hex_util.h"
 #include "core/file_sys/savedata_factory.h"
 #include "core/hle/service/cmif_serialization.h"

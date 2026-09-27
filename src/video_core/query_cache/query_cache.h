@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <array>
 #include <deque>
 #include <memory>

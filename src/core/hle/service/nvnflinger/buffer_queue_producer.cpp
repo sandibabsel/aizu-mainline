@@ -4,6 +4,7 @@
 // Parts of this implementation were based on:
 // https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueProducer.cpp
 
+#include <cstring>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/hle/kernel/k_event.h"

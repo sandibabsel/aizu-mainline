@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "common/input.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "common/hex_util.h"
 #include "core/debugger/gdbstub_arch.h"
 #include "core/hle/kernel/k_thread.h"

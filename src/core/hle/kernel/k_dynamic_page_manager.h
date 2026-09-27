@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <vector>
 
 #include "common/alignment.h"

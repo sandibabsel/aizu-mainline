@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/div_ceil.h"
 
 #include "core/hle/service/cmif_types.h"

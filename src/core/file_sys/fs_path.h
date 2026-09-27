@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/alignment.h"
 #include "common/common_funcs.h"
 #include "core/file_sys/errors.h"

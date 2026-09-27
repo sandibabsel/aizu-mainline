@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "common/settings.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"

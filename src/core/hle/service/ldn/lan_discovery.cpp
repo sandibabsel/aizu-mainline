@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "core/hle/service/ldn/lan_discovery.h"
 #include "core/internal_network/network.h"
 #include "core/internal_network/network_interface.h"

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Ryujinx Team and Contributors
 // SPDX-License-Identifier: MIT
 
+#include <cstring>
 #include <bit>
 #include "video_core/cdma_pusher.h"
 #include "video_core/engines/maxwell_3d.h"

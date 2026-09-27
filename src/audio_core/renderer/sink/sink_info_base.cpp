@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "audio_core/renderer/memory/pool_mapper.h"
 #include "audio_core/renderer/sink/sink_info_base.h"
 

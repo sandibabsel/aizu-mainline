@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "core/crypto/aes_util.h"
 #include "core/crypto/key_manager.h"
 #include "core/file_sys/fssystem/fssystem_crypto_configuration.h"

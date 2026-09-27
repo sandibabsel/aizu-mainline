@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "common/alignment.h"
 #include "core/file_sys/fssystem/fssystem_alignment_matching_storage_impl.h"
 

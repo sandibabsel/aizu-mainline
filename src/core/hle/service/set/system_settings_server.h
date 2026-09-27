@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <filesystem>
 #include <mutex>
 #include <string>

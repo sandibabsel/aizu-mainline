@@ -1,8 +1,10 @@
+#include <cstring>
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifdef _WIN32
 
+#include <cstring>
 #include <iterator>
 #include <unordered_map>
 #include <boost/icl/separate_interval_set.hpp>

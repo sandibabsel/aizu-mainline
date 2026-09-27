@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "core/core.h"
 #include "core/hle/kernel/k_shared_memory.h"
 #include "core/hle/service/psc/time/shared_memory.h"

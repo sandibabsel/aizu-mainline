@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <cstddef>
 #include <limits>
 #include <type_traits>

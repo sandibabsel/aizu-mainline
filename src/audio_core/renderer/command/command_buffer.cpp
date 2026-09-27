@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "audio_core/renderer/behavior/behavior_info.h"
 #include "audio_core/renderer/command/command_buffer.h"
 #include "audio_core/renderer/command/command_list_header.h"

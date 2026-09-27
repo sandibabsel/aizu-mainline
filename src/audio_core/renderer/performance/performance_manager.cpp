@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "audio_core/renderer/behavior/behavior_info.h"
 #include "audio_core/renderer/memory/memory_pool_info.h"
 #include "audio_core/renderer/performance/performance_manager.h"

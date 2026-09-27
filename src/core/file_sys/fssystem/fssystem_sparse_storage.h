@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "core/file_sys/fssystem/fssystem_indirect_storage.h"
 
 namespace FileSys {

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <mutex>
 
 #include "common/alignment.h"
@@ -406,7 +407,7 @@ private:
     static_assert(std::is_trivial_v<EntrySetHeader>);
 
     const BucketTree* m_tree;
-    BucketTree::Offsets m_offsets;
+    BucketTree::Offsets m_offsets{};
     void* m_entry;
     s32 m_entry_index;
     s32 m_entry_set_count;

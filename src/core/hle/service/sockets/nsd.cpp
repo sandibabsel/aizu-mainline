@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/sockets/nsd.h"
 

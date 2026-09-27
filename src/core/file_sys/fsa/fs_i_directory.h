@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/common_types.h"
 #include "core/file_sys/errors.h"
 #include "core/file_sys/fs_directory.h"

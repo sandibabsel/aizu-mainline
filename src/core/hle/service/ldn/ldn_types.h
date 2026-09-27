@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <fmt/format.h>
 
 #include "common/common_funcs.h"

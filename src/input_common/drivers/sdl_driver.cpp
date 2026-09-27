@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2018 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include "common/logging/log.h"
 #include "common/math_util.h"
 #include "common/param_package.h"

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2015 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include <array>
 #include <cmath>
 #include <QPainter>

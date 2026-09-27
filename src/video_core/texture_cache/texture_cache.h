@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <unordered_set>
 #include <boost/container/small_vector.hpp>
 

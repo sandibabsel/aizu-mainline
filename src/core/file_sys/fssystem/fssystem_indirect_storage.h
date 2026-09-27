@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "core/file_sys/errors.h"
 #include "core/file_sys/fssystem/fs_i_storage.h"
 #include "core/file_sys/fssystem/fssystem_bucket_tree.h"
@@ -164,7 +165,7 @@ Result IndirectStorage::OperatePerEntry(s64 offset, s64 size, F func) {
     R_SUCCEED_IF(size == 0);
 
     // Get the table offsets.
-    BucketTree::Offsets table_offsets;
+    BucketTree::Offsets table_offsets{};
     R_TRY(m_table.GetOffsets(std::addressof(table_offsets)));
 
     // Validate arguments.

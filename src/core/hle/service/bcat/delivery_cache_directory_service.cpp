@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <cstring>
 #include "common/string_util.h"
 #include "core/file_sys/vfs/vfs_types.h"
 #include "core/hle/service/bcat/bcat_result.h"
