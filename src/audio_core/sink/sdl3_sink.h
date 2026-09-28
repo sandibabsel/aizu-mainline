@@ -1,10 +1,13 @@
-// SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
-#include <list>
 #include <string>
+#include <vector>
 
 #include "audio_core/sink/sink.h"
 
@@ -15,10 +18,14 @@ class System;
 namespace AudioCore::Sink {
 class SinkStream;
 
-class OboeSink final : public Sink {
+/**
+ * SDL backend sink, holds multiple output streams and is responsible for sinking samples to
+ * hardware. Used by Audio Render, Audio In and Audio Out.
+ */
+class SDLSink final : public Sink {
 public:
-    explicit OboeSink();
-    ~OboeSink() override;
+    explicit SDLSink(std::string_view device_id);
+    ~SDLSink() override;
 
     /**
      * Create a new sink stream.
@@ -68,8 +75,35 @@ public:
     void SetSystemVolume(f32 volume) override;
 
 private:
-    /// List of streams managed by this sink
-    std::list<SinkStreamPtr> sink_streams{};
+    /// Name of the output device used by streams
+    std::string output_device;
+    /// Name of the input device used by streams
+    std::string input_device;
+    /// Vector of streams managed by this sink
+    std::vector<SinkStreamPtr> sink_streams;
 };
+
+/**
+ * Get a list of connected devices from SDL.
+ *
+ * @param capture - Return input (capture) devices if true, otherwise output devices.
+ */
+std::vector<std::string> ListSDLSinkDevices(bool capture);
+
+// REVERSION - function GetSDLLatency() reintroduced from EA-3833 - DIABLO 3 FIX
+/**
+ * Get the reported latency for this sink.
+ *
+ * @return Minimum latency for this sink.
+ */
+u32 GetSDLLatency();
+
+/** REVERTED back to 3833 - Below function IsSDLSuitable() removed, reverting to GetSDLLatency() above. - DIABLO 3 FIX
+ * Check if this backend is suitable for use.
+ * Checks if enabled, its latency, whether it opens successfully, etc.
+ *
+ * @return True is this backend is suitable, false otherwise.
+ */
+//bool IsSDLSuitable(); // REVERTED for GetSDLLatency() from EA-3833
 
 } // namespace AudioCore::Sink

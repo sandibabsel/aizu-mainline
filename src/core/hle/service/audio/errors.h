@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -19,6 +22,7 @@ constexpr Result ResultInvalidAddressInfo{ErrorModule::Audio, 42};
 constexpr Result ResultNotSupported{ErrorModule::Audio, 513};
 constexpr Result ResultInvalidHandle{ErrorModule::Audio, 1536};
 constexpr Result ResultInvalidRevision{ErrorModule::Audio, 1537};
+constexpr Result ResultInvalidArgument{ErrorModule::Audio, 900};
 
 constexpr Result ResultLibOpusAllocFail{ErrorModule::HwOpus, 7};
 constexpr Result ResultInputDataTooSmall{ErrorModule::HwOpus, 8};
@@ -29,6 +33,7 @@ constexpr Result ResultLibOpusInternalError{ErrorModule::HwOpus, 4};
 constexpr Result ResultBufferTooSmall{ErrorModule::HwOpus, 3};
 constexpr Result ResultLibOpusBadArg{ErrorModule::HwOpus, 2};
 constexpr Result ResultInvalidOpusDSPReturnCode{ErrorModule::HwOpus, 259};
+constexpr Result ResultOutOfOpusDecoders{ErrorModule::HwOpus, 385};
 constexpr Result ResultInvalidOpusSampleRate{ErrorModule::HwOpus, 1001};
 constexpr Result ResultInvalidOpusChannelCount{ErrorModule::HwOpus, 1002};
 

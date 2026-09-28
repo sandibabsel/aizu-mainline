@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,7 @@
 #include "audio_core/common/common.h"
 #include "audio_core/sink/cubeb_sink.h"
 #include "audio_core/sink/sink_stream.h"
-#include "common/logging/log.h"
+#include "common/logging.h"
 #include "common/scope_exit.h"
 #include "core/core.h"
 
@@ -70,7 +73,7 @@ public:
             minimum_latency = TargetSampleCount * 2;
         }
 
-        minimum_latency = std::max(minimum_latency, TargetSampleCount * 2);
+        minimum_latency = (std::max)(minimum_latency, TargetSampleCount * 2);
 
         LOG_INFO(Service_Audio,
                  "Opening cubeb stream {} type {} with: rate {} channels {} (system channels {}) "
@@ -208,7 +211,7 @@ CubebSink::CubebSink(std::string_view target_device_name) {
     com_init_result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-    if (cubeb_init(&ctx, "yuzu", nullptr) != CUBEB_OK) {
+    if (cubeb_init(&ctx, "Eden", nullptr) != CUBEB_OK) {
         LOG_CRITICAL(Audio_Sink, "cubeb_init failed");
         return;
     }
@@ -258,6 +261,7 @@ SinkStream* CubebSink::AcquireSinkStream(Core::System& system, u32 system_channe
     system_channels = system_channels_;
     SinkStreamPtr& stream = sink_streams.emplace_back(std::make_unique<CubebSinkStream>(
         ctx, device_channels, system_channels, output_device, input_device, name, type, system));
+    stream->SetDeviceVolume(device_volume);
 
     return stream.get();
 }
@@ -277,14 +281,11 @@ void CubebSink::CloseStreams() {
 }
 
 f32 CubebSink::GetDeviceVolume() const {
-    if (sink_streams.empty()) {
-        return 1.0f;
-    }
-
-    return sink_streams[0]->GetDeviceVolume();
+    return device_volume;
 }
 
 void CubebSink::SetDeviceVolume(f32 volume) {
+    device_volume = volume;
     for (auto& stream : sink_streams) {
         stream->SetDeviceVolume(volume);
     }
@@ -304,7 +305,7 @@ std::vector<std::string> ListCubebSinkDevices(bool capture) {
     auto com_init_result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-    if (cubeb_init(&ctx, "yuzu Device Enumerator", nullptr) != CUBEB_OK) {
+    if (cubeb_init(&ctx, "Eden Device Enumerator", nullptr) != CUBEB_OK) {
         LOG_CRITICAL(Audio_Sink, "cubeb_init failed");
         return {};
     }
@@ -334,6 +335,48 @@ std::vector<std::string> ListCubebSinkDevices(bool capture) {
     return device_list;
 }
 
+/* REVERSION TO 3833 - function GetCubebLatency REINTRODUCED FROM 3833 - DIABLO 3 FIX */
+u32 GetCubebLatency() {
+    cubeb* ctx;
+
+#ifdef _WIN32
+    auto com_init_result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
+
+    // Init cubeb
+    if (cubeb_init(&ctx, "yuzu Latency Getter", nullptr) != CUBEB_OK) {
+        LOG_CRITICAL(Audio_Sink, "cubeb_init failed");
+        // Return a large latency so we choose SDL instead.
+        return 10000u;
+    }
+
+#ifdef _WIN32
+    if (SUCCEEDED(com_init_result)) {
+        CoUninitialize();
+    }
+#endif
+
+    // Get min latency
+    cubeb_stream_params params{};
+    params.rate = TargetSampleRate;
+    params.channels = 2;
+    params.format = CUBEB_SAMPLE_S16LE;
+    params.prefs = CUBEB_STREAM_PREF_NONE;
+    params.layout = CUBEB_LAYOUT_STEREO;
+
+    u32 latency{0};
+    const auto latency_error = cubeb_get_min_latency(ctx, &params, &latency);
+    if (latency_error != CUBEB_OK) {
+        LOG_CRITICAL(Audio_Sink, "Error getting minimum latency, error: {}", latency_error);
+        latency = TargetSampleCount * 2;
+    }
+    latency = (std::max)(latency, TargetSampleCount * 2);
+    cubeb_destroy(ctx);
+    return latency;
+}
+
+// REVERTED back to 3833 - Below namespace section and function IsCubebSuitable() removed, reverting to GetCubebLatency() above. - DIABLO 3 FIX
+/*
 namespace {
 static long TmpDataCallback(cubeb_stream*, void*, const void*, void*, long) {
     return TargetSampleCount;
@@ -352,7 +395,7 @@ bool IsCubebSuitable() {
 #endif
 
     // Init cubeb
-    if (cubeb_init(&ctx, "yuzu Latency Getter", nullptr) != CUBEB_OK) {
+    if (cubeb_init(&ctx, "Eden Latency Getter", nullptr) != CUBEB_OK) {
         LOG_ERROR(Audio_Sink, "Cubeb failed to init, it is not suitable.");
         return false;
     }
@@ -381,12 +424,12 @@ bool IsCubebSuitable() {
         LOG_ERROR(Audio_Sink, "Cubeb could not get min latency, it is not suitable.");
         return false;
     }
-    latency = std::max(latency, TargetSampleCount * 2);
+    latency = (std::max)(latency, TargetSampleCount * 2);
 
     // Test opening a device with standard parameters
     cubeb_devid output_device{0};
     cubeb_devid input_device{0};
-    std::string name{"Yuzu test"};
+    std::string name{"Eden test"};
     cubeb_stream* stream{nullptr};
 
     if (cubeb_stream_init(ctx, &stream, name.c_str(), input_device, nullptr, output_device, &params,
@@ -400,5 +443,6 @@ bool IsCubebSuitable() {
     return true;
 #endif
 }
+*/
 
 } // namespace AudioCore::Sink

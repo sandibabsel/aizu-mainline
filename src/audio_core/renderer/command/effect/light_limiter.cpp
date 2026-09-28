@@ -1,7 +1,10 @@
+#include <cstring>
+// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/effect/light_limiter.h"
 
@@ -51,8 +54,8 @@ static void ApplyLightLimiterEffect(const LightLimiterInfo::ParameterVersion2& p
                                     std::span<std::span<const s32>> inputs,
                                     std::span<std::span<s32>> outputs, const u32 sample_count,
                                     LightLimiterInfo::StatisticsInternal* statistics) {
-    constexpr s64 min{std::numeric_limits<s32>::min()};
-    constexpr s64 max{std::numeric_limits<s32>::max()};
+    constexpr s64 min{(std::numeric_limits<s32>::min)()};
+    constexpr s64 max{(std::numeric_limits<s32>::max)()};
 
     const auto recip_estimate = [](f64 a) -> f64 {
         s32 q, s;
@@ -118,9 +121,9 @@ static void ApplyLightLimiterEffect(const LightLimiterInfo::ParameterVersion2& p
 
                 if (statistics) {
                     statistics->channel_max_sample[channel] =
-                        std::max(statistics->channel_max_sample[channel], abs_sample.to_float());
+                        (std::max)(statistics->channel_max_sample[channel], abs_sample.to_float());
                     statistics->channel_compression_gain_min[channel] =
-                        std::min(statistics->channel_compression_gain_min[channel],
+                        (std::min)(statistics->channel_compression_gain_min[channel],
                                  state.compression_gain[channel].to_float());
                 }
             }

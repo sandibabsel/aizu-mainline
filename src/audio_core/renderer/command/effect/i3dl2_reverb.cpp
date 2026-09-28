@@ -1,12 +1,15 @@
+#include <cstring>
+// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
 #include <numbers>
 
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/effect/i3dl2_reverb.h"
-#include "common/polyfill_ranges.h"
+#include <ranges>
 
 namespace AudioCore::Renderer {
 
@@ -77,9 +80,9 @@ static void UpdateI3dl2ReverbEffectParameter(const I3dl2ReverbInfo::ParameterVer
 
     state.dry_gain = params.dry_gain;
     Common::FixedPoint<50, 14> early_gain{
-        std::min(params.room_gain + params.reflection_gain, 5000.0f) / 2000.0f};
+        (std::min)(params.room_gain + params.reflection_gain, 5000.0f) / 2000.0f};
     state.early_gain = pow_10(early_gain.to_float());
-    Common::FixedPoint<50, 14> late_gain{std::min(params.room_gain + params.reverb_gain, 5000.0f) /
+    Common::FixedPoint<50, 14> late_gain{(std::min)(params.room_gain + params.reverb_gain, 5000.0f) /
                                          2000.0f};
     state.late_gain = pow_10(late_gain.to_float());
 
@@ -95,7 +98,7 @@ static void UpdateI3dl2ReverbEffectParameter(const I3dl2ReverbInfo::ParameterVer
         const Common::FixedPoint<50, 14> c{
             std::sqrt(std::pow(b.to_float(), 2.0f) + (std::pow(a.to_float(), 2.0f) * -4.0f))};
 
-        state.lowpass_1 = std::min(((b - c) / (a * 2.0f)).to_float(), 0.99723f);
+        state.lowpass_1 = (std::min)(((b - c) / (a * 2.0f)).to_float(), 0.99723f);
         state.lowpass_2 = 1.0f - state.lowpass_1;
     }
 

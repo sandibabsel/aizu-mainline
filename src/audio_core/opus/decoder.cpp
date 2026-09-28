@@ -1,11 +1,15 @@
+#include <cstring>
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
 #include "audio_core/opus/decoder.h"
 #include "audio_core/opus/hardware_opus.h"
 #include "audio_core/opus/parameters.h"
 #include "common/alignment.h"
+#include "common/scope_exit.h"
 #include "common/swap.h"
 #include "core/core.h"
 
@@ -25,33 +29,39 @@ OpusDecoder::OpusDecoder(Core::System& system_, HardwareOpus& hardware_opus_)
 
 OpusDecoder::~OpusDecoder() {
     if (decode_object_initialized) {
-        hardware_opus.ShutdownDecodeObject(shared_buffer.get(), shared_buffer_size);
+        hardware_opus.ShutdownDecodeObject(shared_buffer.data(), shared_buffer.size());
+        hardware_opus.UnregisterDecoder(this);
     }
 }
 
-Result OpusDecoder::Initialize(const OpusParametersEx& params,
-                               Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size) {
+Result OpusDecoder::Initialize(const OpusParametersEx& params, Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size) {
+    R_TRY(hardware_opus.RegisterDecoder(this));
+    SCOPE_EXIT {
+        if (!decode_object_initialized) {
+            hardware_opus.UnregisterDecoder(this);
+        }
+    };
+
     auto frame_size{params.use_large_frame_size ? 5760 : 1920};
-    shared_buffer_size = transfer_memory_size;
-    shared_buffer = std::make_unique<u8[]>(shared_buffer_size);
+    shared_buffer.resize(transfer_memory_size);
     shared_memory_mapped = true;
 
     buffer_size =
         Common::AlignUp((frame_size * params.channel_count) / (48'000 / params.sample_rate), 16);
 
-    out_data = {shared_buffer.get() + shared_buffer_size - buffer_size, buffer_size};
+    out_data = {shared_buffer.data() + shared_buffer.size() - buffer_size, buffer_size};
     size_t in_data_size{0x600u};
     in_data = {out_data.data() - in_data_size, in_data_size};
 
     ON_RESULT_FAILURE {
         if (shared_memory_mapped) {
             shared_memory_mapped = false;
-            ASSERT(R_SUCCEEDED(hardware_opus.UnmapMemory(shared_buffer.get(), shared_buffer_size)));
+            ASSERT(R_SUCCEEDED(hardware_opus.UnmapMemory(shared_buffer.data(), shared_buffer.size())));
         }
     };
 
     R_TRY(hardware_opus.InitializeDecodeObject(params.sample_rate, params.channel_count,
-                                               shared_buffer.get(), shared_buffer_size));
+                                               shared_buffer.data(), shared_buffer.size()));
 
     sample_rate = params.sample_rate;
     channel_count = params.channel_count;
@@ -60,31 +70,36 @@ Result OpusDecoder::Initialize(const OpusParametersEx& params,
     R_SUCCEED();
 }
 
-Result OpusDecoder::Initialize(const OpusMultiStreamParametersEx& params,
-                               Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size) {
+Result OpusDecoder::Initialize(const OpusMultiStreamParametersEx& params, Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size) {
+    R_TRY(hardware_opus.RegisterDecoder(this));
+    SCOPE_EXIT {
+        if (!decode_object_initialized) {
+            hardware_opus.UnregisterDecoder(this);
+        }
+    };
+
     auto frame_size{params.use_large_frame_size ? 5760 : 1920};
-    shared_buffer_size = transfer_memory_size;
-    shared_buffer = std::make_unique<u8[]>(shared_buffer_size);
+    shared_buffer.resize(transfer_memory_size, 0);
     shared_memory_mapped = true;
 
     buffer_size =
         Common::AlignUp((frame_size * params.channel_count) / (48'000 / params.sample_rate), 16);
 
-    out_data = {shared_buffer.get() + shared_buffer_size - buffer_size, buffer_size};
+    out_data = {shared_buffer.data() + shared_buffer.size() - buffer_size, buffer_size};
     size_t in_data_size{Common::AlignUp(1500ull * params.total_stream_count, 64u)};
     in_data = {out_data.data() - in_data_size, in_data_size};
 
     ON_RESULT_FAILURE {
         if (shared_memory_mapped) {
             shared_memory_mapped = false;
-            ASSERT(R_SUCCEEDED(hardware_opus.UnmapMemory(shared_buffer.get(), shared_buffer_size)));
+            ASSERT(R_SUCCEEDED(hardware_opus.UnmapMemory(shared_buffer.data(), shared_buffer.size())));
         }
     };
 
     R_TRY(hardware_opus.InitializeMultiStreamDecodeObject(
         params.sample_rate, params.channel_count, params.total_stream_count,
-        params.stereo_stream_count, params.mappings.data(), shared_buffer.get(),
-        shared_buffer_size));
+        params.stereo_stream_count, params.mappings.data(), shared_buffer.data(),
+        shared_buffer.size()));
 
     sample_rate = params.sample_rate;
     channel_count = params.channel_count;
@@ -111,7 +126,7 @@ Result OpusDecoder::DecodeInterleaved(u32* out_data_size, u64* out_time_taken,
              ResultBufferTooSmall);
 
     if (!shared_memory_mapped) {
-        R_TRY(hardware_opus.MapMemory(shared_buffer.get(), shared_buffer_size));
+        R_TRY(hardware_opus.MapMemory(shared_buffer.data(), shared_buffer.size()));
         shared_memory_mapped = true;
     }
 
@@ -119,7 +134,7 @@ Result OpusDecoder::DecodeInterleaved(u32* out_data_size, u64* out_time_taken,
 
     R_TRY(hardware_opus.DecodeInterleaved(out_samples, out_data.data(), out_data.size_bytes(),
                                           channel_count, in_data.data(), header.size,
-                                          shared_buffer.get(), time_taken, reset));
+                                          shared_buffer.data(), time_taken, reset));
 
     std::memcpy(output_data.data(), out_data.data(), out_samples * channel_count * sizeof(s16));
 
@@ -134,7 +149,7 @@ Result OpusDecoder::DecodeInterleaved(u32* out_data_size, u64* out_time_taken,
 Result OpusDecoder::SetContext([[maybe_unused]] std::span<const u8> context) {
     R_SUCCEED_IF(shared_memory_mapped);
     shared_memory_mapped = true;
-    R_RETURN(hardware_opus.MapMemory(shared_buffer.get(), shared_buffer_size));
+    R_RETURN(hardware_opus.MapMemory(shared_buffer.data(), shared_buffer.size()));
 }
 
 Result OpusDecoder::DecodeInterleavedForMultiStream(u32* out_data_size, u64* out_time_taken,
@@ -149,7 +164,7 @@ Result OpusDecoder::DecodeInterleavedForMultiStream(u32* out_data_size, u64* out
     auto* header_p{reinterpret_cast<const OpusPacketHeader*>(input_data.data())};
     OpusPacketHeader header{ReverseHeader(*header_p)};
 
-    LOG_TRACE(Service_Audio, "header size 0x{:X} input data size 0x{:X} in_data size 0x{:X}",
+    LOG_TRACE(Service_Audio, "header size {:#x} input data size {:#x} in_data size {:#x}",
               header.size, input_data.size_bytes(), in_data.size_bytes());
 
     R_UNLESS(in_data.size_bytes() >= header.size &&
@@ -157,7 +172,7 @@ Result OpusDecoder::DecodeInterleavedForMultiStream(u32* out_data_size, u64* out
              ResultBufferTooSmall);
 
     if (!shared_memory_mapped) {
-        R_TRY(hardware_opus.MapMemory(shared_buffer.get(), shared_buffer_size));
+        R_TRY(hardware_opus.MapMemory(shared_buffer.data(), shared_buffer.size()));
         shared_memory_mapped = true;
     }
 
@@ -165,7 +180,7 @@ Result OpusDecoder::DecodeInterleavedForMultiStream(u32* out_data_size, u64* out
 
     R_TRY(hardware_opus.DecodeInterleavedForMultiStream(
         out_samples, out_data.data(), out_data.size_bytes(), channel_count, in_data.data(),
-        header.size, shared_buffer.get(), time_taken, reset));
+        header.size, shared_buffer.data(), time_taken, reset));
 
     std::memcpy(output_data.data(), out_data.data(), out_samples * channel_count * sizeof(s16));
 

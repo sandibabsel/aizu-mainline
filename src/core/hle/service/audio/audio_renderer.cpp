@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -28,10 +31,10 @@ IAudioRenderer::IAudioRenderer(Core::System& system_, Manager& manager_,
         {7, D<&IAudioRenderer::QuerySystemEvent>, "QuerySystemEvent"},
         {8, D<&IAudioRenderer::SetRenderingTimeLimit>, "SetRenderingTimeLimit"},
         {9, D<&IAudioRenderer::GetRenderingTimeLimit>, "GetRenderingTimeLimit"},
-        {10, D<&IAudioRenderer::RequestUpdateAuto>, "RequestUpdateAuto"},
-        {11, nullptr, "ExecuteAudioRendererRendering"},
-        {12, D<&IAudioRenderer::SetVoiceDropParameter>, "SetVoiceDropParameter"},
-        {13, D<&IAudioRenderer::GetVoiceDropParameter>, "GetVoiceDropParameter"},
+        {10, D<&IAudioRenderer::RequestUpdateAuto>, "RequestUpdateAuto"}, //3.0.0+
+        {11, nullptr, "ExecuteAudioRendererRendering"}, //3.0.0+
+        {12, D<&IAudioRenderer::SetVoiceDropParameter>, "SetVoiceDropParameter"}, //15.0.0+
+        {13, D<&IAudioRenderer::GetVoiceDropParameter>, "GetVoiceDropParameter"}, //15.0.0+
     };
     // clang-format on
     RegisterHandlers(functions);
@@ -85,7 +88,7 @@ Result IAudioRenderer::RequestUpdateAuto(
 
     const auto result = impl->RequestUpdate(input, out_performance_buffer, out_buffer);
     if (result.IsFailure()) {
-        LOG_ERROR(Service_Audio, "RequestUpdate failed error 0x{:02X}!", result.GetDescription());
+        LOG_ERROR(Service_Audio, "RequestUpdate failed error {:#02x}!", result.GetDescription());
     }
 
     R_RETURN(result);

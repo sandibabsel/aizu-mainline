@@ -1,7 +1,10 @@
+#include <cstring>
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
 #include <chrono>
 #include <span>
 
@@ -719,7 +722,7 @@ u64 System::GenerateCommand(std::span<u8> in_command_buffer,
 
         const auto estimated_time{start_estimated_time - end_estimated_time};
 
-        const auto time_limit{static_cast<u32>(std::max(dsp_time_limit + estimated_time, 0.0f))};
+        const auto time_limit{static_cast<u32>((std::max)(dsp_time_limit + estimated_time, 0.0f))};
         num_voices_dropped =
             DropVoices(command_buffer, static_cast<u32>(start_estimated_time), time_limit);
     }

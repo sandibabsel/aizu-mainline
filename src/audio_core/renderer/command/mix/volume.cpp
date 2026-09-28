@@ -1,11 +1,14 @@
+#include <cstring>
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/mix/volume.h"
 #include "common/fixed_point.h"
-#include "common/logging/log.h"
+#include "common/logging.h"
 
 namespace AudioCore::Renderer {
 /**

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,17 +10,14 @@
 #include <vector>
 
 #include "audio_core/sink/sink_details.h"
-#ifdef HAVE_OBOE
-#include "audio_core/sink/oboe_sink.h"
-#endif
 #ifdef HAVE_CUBEB
 #include "audio_core/sink/cubeb_sink.h"
 #endif
-#ifdef HAVE_SDL2
-#include "audio_core/sink/sdl2_sink.h"
+#ifdef HAVE_SDL3
+#include "audio_core/sink/sdl3_sink.h"
 #endif
 #include "audio_core/sink/null_sink.h"
-#include "common/logging/log.h"
+#include "common/logging.h"
 #include "common/settings_enums.h"
 
 namespace AudioCore::Sink {
@@ -25,7 +25,8 @@ namespace {
 struct SinkDetails {
     using FactoryFn = std::unique_ptr<Sink> (*)(std::string_view);
     using ListDevicesFn = std::vector<std::string> (*)(bool);
-    using SuitableFn = bool (*)();
+    using LatencyFn = u32 (*)(); // REINTRODUCED FROM 3833 - DIABLO 3 FIX
+    // using SuitableFn = bool (*)(); // REVERTED FOR ABOVE - DIABLO 3 FIX
 
     /// Name for this sink.
     Settings::AudioEngine id;
@@ -33,22 +34,14 @@ struct SinkDetails {
     FactoryFn factory;
     /// A method to call to list available devices.
     ListDevicesFn list_devices;
+    /// Method to get the latency of this backend - REINTRODUCED FROM 3833 - DIABLO 3 FIX
+    LatencyFn latency;
     /// Check whether this backend is suitable to be used.
-    SuitableFn is_suitable;
+    /// SuitableFn is_suitable; // REVERTED FOR LatencyFn latency ABOVE - DIABLO 3 FIX
 };
 
 // sink_details is ordered in terms of desirability, with the best choice at the top.
 constexpr SinkDetails sink_details[] = {
-#ifdef HAVE_OBOE
-    SinkDetails{
-        Settings::AudioEngine::Oboe,
-        [](std::string_view device_id) -> std::unique_ptr<Sink> {
-            return std::make_unique<OboeSink>();
-        },
-        [](bool capture) { return std::vector<std::string>{"Default"}; },
-        []() { return true; },
-    },
-#endif
 #ifdef HAVE_CUBEB
     SinkDetails{
         Settings::AudioEngine::Cubeb,
@@ -56,17 +49,17 @@ constexpr SinkDetails sink_details[] = {
             return std::make_unique<CubebSink>(device_id);
         },
         &ListCubebSinkDevices,
-        &IsCubebSuitable,
+        &GetCubebLatency,
     },
 #endif
-#ifdef HAVE_SDL2
+#ifdef HAVE_SDL3
     SinkDetails{
         Settings::AudioEngine::Sdl2,
         [](std::string_view device_id) -> std::unique_ptr<Sink> {
             return std::make_unique<SDLSink>(device_id);
         },
         &ListSDLSinkDevices,
-        &IsSDLSuitable,
+        &GetSDLLatency,
     },
 #endif
     SinkDetails{
@@ -75,7 +68,7 @@ constexpr SinkDetails sink_details[] = {
             return std::make_unique<NullSink>(device_id);
         },
         [](bool capture) { return std::vector<std::string>{"null"}; },
-        []() { return true; },
+        []() { return 0u; },
     },
 };
 
@@ -88,6 +81,8 @@ const SinkDetails& GetOutputSinkDetails(Settings::AudioEngine sink_id) {
     auto iter = find_backend(sink_id);
 
     if (sink_id == Settings::AudioEngine::Auto) {
+        // REVERTED TO 3833 BELOW - DIABLO 3 FIX
+        /*
         // Auto-select a backend. Use the sink details ordering, preferring cubeb first, checking
         // that the backend is available and suitable to use.
         for (auto& details : sink_details) {
@@ -96,14 +91,29 @@ const SinkDetails& GetOutputSinkDetails(Settings::AudioEngine sink_id) {
                 break;
             }
         }
+        */ // END REVERTED CODE - DIABLO 3 FIX
+
+        // BEGIN REINTRODUCED FROM 3833 - REPLACED CODE BLOCK ABOVE - DIABLO 3 FIX
+        // Auto-select a backend. Prefer CubeB, but it may report a large minimum latency which
+        // causes audio issues, in that case go with SDL.
+#if defined(HAVE_CUBEB) && defined(HAVE_SDL3)
+        iter = find_backend(Settings::AudioEngine::Cubeb);
+        if (iter->latency() > TargetSampleCount * 3) {
+        iter = find_backend(Settings::AudioEngine::Sdl2);
+        }
+#else
+        iter = std::begin(sink_details);
+#endif
+        // END REINTRODUCED SECTION FROM 3833 - DIABLO 3 FIX
         LOG_INFO(Service_Audio, "Auto-selecting the {} backend",
                  Settings::CanonicalizeEnum(iter->id));
+    /* BEGIN REMOVED - REVERTING BACK TO 3833, this didn't exist at all. - DIABLO 3 FIX
     } else {
         if (iter != std::end(sink_details) && !iter->is_suitable()) {
             LOG_ERROR(Service_Audio, "Selected backend {} is not suitable, falling back to null",
                       Settings::CanonicalizeEnum(iter->id));
             iter = find_backend(Settings::AudioEngine::Null);
-        }
+        } */ // END REMOVED REVERT - DIABLO 3 FIX
     }
 
     if (iter == std::end(sink_details)) {
