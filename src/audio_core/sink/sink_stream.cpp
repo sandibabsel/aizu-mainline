@@ -242,7 +242,7 @@ void SinkStream::WaitFreeSpace(std::stop_token stop_token) {
     release_cv.wait_for(lk, std::chrono::milliseconds(7), can_continue);
 
     if (queued_buffers > max_queue_size + 3) {
-        release_cv.wait(lk, stop_token, can_continue);
+        Common::CondvarWait(release_cv, lk, stop_token, can_continue);
     }
 }
 

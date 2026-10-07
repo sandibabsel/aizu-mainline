@@ -6,7 +6,15 @@
 #include <thread>
 
 #include <boost/asio.hpp>
+// Boost >= 1.86 moved the classic API to boost/process/v1; older Boost (e.g. 1.83 from the Android
+// vcpkg baseline) only has the unversioned headers.
+#if __has_include(<boost/process/v1/async_pipe.hpp>)
 #include <boost/process/v1/async_pipe.hpp>
+namespace BoostProcess = boost::process::v1;
+#else
+#include <boost/process/async_pipe.hpp>
+namespace BoostProcess = boost::process;
+#endif
 
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
@@ -326,7 +334,7 @@ private:
 
     struct ConnectionState {
         boost::asio::ip::tcp::socket client_socket;
-        boost::process::v1::async_pipe signal_pipe;
+        BoostProcess::async_pipe signal_pipe;
 
         SignalInfo info;
         Kernel::KScopedAutoObject<Kernel::KThread> active_thread;

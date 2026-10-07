@@ -1,4 +1,3 @@
-find_package(SDL3 REQUIRED)
 # SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -239,11 +238,24 @@ if (ENABLE_CUBEB)
     target_compile_definitions(audio_core PRIVATE HAVE_CUBEB=1)
 endif()
 
-target_sources(audio_core PRIVATE
-    sink/sdl3_sink.cpp
-    sink/sdl3_sink.h)
+if (ANDROID)
+    # Android outputs audio through Oboe; SDL3 is not part of the Android build
+    target_sources(audio_core PRIVATE
+        sink/oboe_sink.cpp
+        sink/oboe_sink.h)
 
-target_link_libraries(audio_core PRIVATE SDL3::SDL3)
-target_compile_definitions(audio_core PRIVATE HAVE_SDL3)
+    # FIXME: this port seems broken, it cannot be imported with find_package(oboe REQUIRED)
+    target_link_libraries(audio_core PRIVATE "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/liboboe.a")
+    target_compile_definitions(audio_core PRIVATE HAVE_OBOE)
+else()
+    find_package(SDL3 REQUIRED)
+
+    target_sources(audio_core PRIVATE
+        sink/sdl3_sink.cpp
+        sink/sdl3_sink.h)
+
+    target_link_libraries(audio_core PRIVATE SDL3::SDL3)
+    target_compile_definitions(audio_core PRIVATE HAVE_SDL3)
+endif()
 
 create_target_directory_groups(audio_core)

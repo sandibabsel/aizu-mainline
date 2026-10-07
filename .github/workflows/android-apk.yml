@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 Aizu Emulator Project
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Builds an installable Android APK (arm64-v8a). Run it from the Actions tab: "android-apk" -> "Run workflow".
+name: 'android-apk'
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Set up cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.ccache
+          key: ${{ runner.os }}-android-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-android-
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ccache glslang-tools
+      - name: Install NDK and CMake
+        run: |
+          set +o pipefail
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --install \
+            "ndk;26.1.10909125" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - name: Build
+        run: |
+          export NDK_CCACHE="$(which ccache)"
+          cd src/android
+          chmod +x ./gradlew
+          ./gradlew assembleMainlineRelease
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aizu-android-apk
+          path: src/android/app/build/outputs/apk/mainline/release/*.apk
+          if-no-files-found: error
