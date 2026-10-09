@@ -37,7 +37,8 @@ Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle 
     case InfoType::TotalNonSystemMemorySize:
     case InfoType::UsedNonSystemMemorySize:
     case InfoType::IsApplication:
-    case InfoType::FreeThreadCount: {
+    case InfoType::FreeThreadCount:
+    case InfoType::AliasRegionExtraSize: {
         R_UNLESS(info_sub_id == 0, ResultInvalidEnumValue);
 
         const auto& handle_table = GetCurrentProcess(system.Kernel()).GetHandleTable();
@@ -132,6 +133,13 @@ Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle 
             } else {
                 *result = 0;
             }
+            R_SUCCEED();
+
+        case InfoType::AliasRegionExtraSize:
+            // Added in firmware 18.0.0 and queried by SDK 18+ titles. The kernel only grows the
+            // alias region when the process is created with EnableAliasRegionExtraSize, which is
+            // never done here, so the extra size is always zero.
+            *result = 0;
             R_SUCCEED();
 
         default:

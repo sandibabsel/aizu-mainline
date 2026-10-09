@@ -200,6 +200,19 @@ static_assert(sizeof(ConsoleSixAxisSensorSharedMemoryFormat) == 0x20,
               "ConsoleSixAxisSensorSharedMemoryFormat is an invalid size");
 
 // This is nn::hid::detail::SharedMemoryFormat
+// Npad state that newer SDKs (seen with SDK 22) read straight from shared memory instead of
+// asking hid over IPC, e.g. nn::hid::GetNpadJoyHoldType and GetLastActiveNpadController.
+struct NpadConditionSharedMemoryFormat {
+    u32 last_active_npad_id;
+    u8 is_last_active_npad_valid;
+    INSERT_PADDING_BYTES(0x3);
+    u32 npad_joy_hold_type;
+    u8 is_initialized;
+    INSERT_PADDING_BYTES(0x3);
+};
+static_assert(sizeof(NpadConditionSharedMemoryFormat) == 0x10,
+              "NpadConditionSharedMemoryFormat is an invalid size");
+
 struct SharedMemoryFormat {
     void Initialize() {}
 
@@ -218,7 +231,9 @@ struct SharedMemoryFormat {
     ConsoleSixAxisSensorSharedMemoryFormat console;
     INSERT_PADDING_BYTES(0x19E0);
     MouseSharedMemoryFormat debug_mouse;
-    INSERT_PADDING_BYTES(0x2000);
+    INSERT_PADDING_BYTES(0x200);
+    NpadConditionSharedMemoryFormat npad_condition;
+    INSERT_PADDING_BYTES(0x1DF0);
 };
 static_assert(offsetof(SharedMemoryFormat, debug_pad) == 0x0, "debug_pad has wrong offset");
 static_assert(offsetof(SharedMemoryFormat, touch_screen) == 0x400, "touch_screen has wrong offset");
@@ -236,6 +251,8 @@ static_assert(offsetof(SharedMemoryFormat, npad) == 0x9A00, "npad has wrong offs
 static_assert(offsetof(SharedMemoryFormat, gesture) == 0x3BA00, "gesture has wrong offset");
 static_assert(offsetof(SharedMemoryFormat, console) == 0x3C200, "console has wrong offset");
 static_assert(offsetof(SharedMemoryFormat, debug_mouse) == 0x3DC00, "debug_mouse has wrong offset");
+static_assert(offsetof(SharedMemoryFormat, npad_condition) == 0x3E200,
+              "npad_condition has wrong offset");
 static_assert(sizeof(SharedMemoryFormat) == 0x40000, "SharedMemoryFormat is an invalid size");
 
 } // namespace Service::HID

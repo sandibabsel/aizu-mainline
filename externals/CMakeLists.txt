@@ -314,3 +314,6 @@ endif()
 if (NOT TARGET SimpleIni::SimpleIni)
     add_subdirectory(simpleini)
 endif()
+
+# ZBIC (zstd variant used by NSO segments since Switch SDK 22)
+add_subdirectory(zbic)

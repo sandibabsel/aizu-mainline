@@ -44,6 +44,7 @@ namespace Service::HID {
 class AppletResource;
 struct HandheldConfig;
 struct NpadInternalState;
+struct NpadConditionSharedMemoryFormat;
 struct NpadSixAxisSensorLifo;
 struct NpadSharedMemoryFormat;
 
@@ -184,6 +185,7 @@ private:
     void InitNewlyAddedController(u64 aruid, Core::HID::NpadIdType npad_id);
     void RequestPadStateUpdate(u64 aruid, Core::HID::NpadIdType npad_id);
     void WriteEmptyEntry(NpadInternalState* npad);
+    void UpdateNpadCondition(u64 aruid, NpadConditionSharedMemoryFormat& condition);
 
     NpadControllerData& GetControllerFromHandle(
         u64 aruid, const Core::HID::SixAxisSensorHandle& device_handle);

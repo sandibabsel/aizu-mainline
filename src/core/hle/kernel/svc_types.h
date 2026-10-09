@@ -118,6 +118,10 @@ enum class ProcessExitReason : u32 {
 };
 
 constexpr inline size_t ThreadLocalRegionSize = 0x200;
+// Offset of the thread handle inside a thread's ThreadLocalRegion. The kernel stores the handle
+// there when it creates a thread; newer SDKs (seen with SDK 22) read it from TPIDRRO_EL0 + 0x110
+// instead of asking the kernel, e.g. to tell whether the current thread owns a mutex.
+constexpr inline size_t ThreadLocalRegionThreadHandleOffset = 0x110;
 
 struct PageInfo {
     u32 flags;
@@ -153,6 +157,7 @@ enum class InfoType : u32 {
     ThreadTickCount = 25,
     IsSvcPermitted = 26,
     IoRegionHint = 27,
+    AliasRegionExtraSize = 28,
 
     MesosphereMeta = 65000,
     MesosphereCurrentProcess = 65001,

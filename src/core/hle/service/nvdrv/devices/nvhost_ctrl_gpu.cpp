@@ -41,6 +41,8 @@ NvResult nvhost_ctrl_gpu::Ioctl1(DeviceFD fd, Ioctl command, std::span<const u8>
             return WrapFixed(this, &nvhost_ctrl_gpu::GetTPCMasks1, input, output);
         case 0x7:
             return WrapFixed(this, &nvhost_ctrl_gpu::FlushL2, input, output);
+        case 0x12:
+            return WrapFixed(this, &nvhost_ctrl_gpu::NumVsms, input, output);
         case 0x14:
             return WrapFixed(this, &nvhost_ctrl_gpu::GetActiveSlotMask, input, output);
         case 0x1c:
@@ -70,6 +72,9 @@ NvResult nvhost_ctrl_gpu::Ioctl3(DeviceFD fd, Ioctl command, std::span<const u8>
                                    inline_output);
         case 0x6:
             return WrapFixedInlOut(this, &nvhost_ctrl_gpu::GetTPCMasks3, input, output,
+                                   inline_output);
+        case 0x13:
+            return WrapFixedInlOut(this, &nvhost_ctrl_gpu::VsmsMapping, input, output,
                                    inline_output);
         default:
             break;
@@ -189,6 +194,25 @@ NvResult nvhost_ctrl_gpu::GetTPCMasks3(IoctlGpuGetTpcMasksArgs& params, std::spa
     }
     if (!tpc_mask.empty()) {
         tpc_mask.front() = params.tcp_mask;
+    }
+    return NvResult::Success;
+}
+
+// The emulated GM20B has one GPC with two TPCs and one SM per TPC, so two "virtual SMs".
+constexpr u32 NumGpuVsms = 2;
+
+NvResult nvhost_ctrl_gpu::NumVsms(IoctlNumVsms& params) {
+    LOG_DEBUG(Service_NVDRV, "called");
+    params.num_vsms = NumGpuVsms;
+    return NvResult::Success;
+}
+
+NvResult nvhost_ctrl_gpu::VsmsMapping(IoctlVsmsMapping& params,
+                                      std::span<VsmsMappingEntry> entries) {
+    LOG_DEBUG(Service_NVDRV, "called, entries={}", entries.size());
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        entries[i] = i < NumGpuVsms ? VsmsMappingEntry{0, static_cast<u8>(i)}
+                                    : VsmsMappingEntry{0, 0};
     }
     return NvResult::Success;
 }

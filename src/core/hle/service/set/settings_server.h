@@ -43,6 +43,8 @@ private:
     Result GetQuestFlag(Out<bool> out_quest_flag);
 
     Result GetKeyCodeMap2(OutLargeData<KeyCodeMap, BufferAttr_HipcMapAlias> out_key_code_map);
+    Result GetKeyCodeMapByPort(OutLargeData<KeyCodeMap, BufferAttr_HipcMapAlias> out_key_code_map,
+                               u32 port);
 
     Result GetDeviceNickName(
         OutLargeData<std::array<u8, 0x80>, BufferAttr_HipcMapAlias> out_device_name);

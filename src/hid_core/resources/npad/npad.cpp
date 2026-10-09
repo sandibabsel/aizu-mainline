@@ -471,8 +471,10 @@ void NPad::OnUpdate(const Core::Timing::CoreTiming& core_timing) {
             continue;
         }
 
-        bool is_set{};
         const auto aruid = data->aruid;
+        UpdateNpadCondition(aruid, data->shared_memory_format->npad_condition);
+
+        bool is_set{};
         npad_resource.IsSupportedNpadStyleSet(is_set, aruid);
         // Wait until style is defined
         if (!is_set) {
@@ -1233,6 +1235,16 @@ Result NPad::AssigningSingleOnSlSrPress(u64 aruid, bool is_enabled) {
         result = npad_resource.SetAssigningSingleOnSlSrPress(aruid, is_enabled);
     }
     return result;
+}
+
+void NPad::UpdateNpadCondition(u64 aruid, NpadConditionSharedMemoryFormat& condition) {
+    NpadJoyHoldType hold_type{};
+    if (npad_resource.GetNpadJoyHoldType(hold_type, aruid).IsSuccess()) {
+        condition.npad_joy_hold_type = static_cast<u32>(hold_type);
+        condition.is_initialized = 1;
+    }
+    condition.last_active_npad_id = static_cast<u32>(hid_core.GetLastActiveController());
+    condition.is_last_active_npad_valid = 1;
 }
 
 Result NPad::GetLastActiveNpad(Core::HID::NpadIdType& out_npad_id) const {

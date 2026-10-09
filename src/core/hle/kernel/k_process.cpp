@@ -987,6 +987,11 @@ Result KProcess::Run(s32 priority, size_t stack_size) {
     main_thread->GetContext().r[0] = 0;
     main_thread->GetContext().r[1] = thread_handle;
 
+    // Pass the thread handle to the thread local region.
+    this->GetMemory().Write32(main_thread->GetTlsAddress() +
+                                  Svc::ThreadLocalRegionThreadHandleOffset,
+                              thread_handle);
+
     // Update our state.
     this->ChangeState((state == State::Created) ? State::Running : State::RunningAttached);
     ON_RESULT_FAILURE_2 {

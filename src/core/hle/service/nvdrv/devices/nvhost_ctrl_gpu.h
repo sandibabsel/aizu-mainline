@@ -99,6 +99,23 @@ private:
     };
     static_assert(sizeof(IoctlActiveSlotMask) == 8, "IoctlActiveSlotMask is incorrect size");
 
+    struct IoctlNumVsms {
+        u32_le num_vsms;
+        u32_le reserved;
+    };
+    static_assert(sizeof(IoctlNumVsms) == 8, "IoctlNumVsms is incorrect size");
+
+    struct IoctlVsmsMapping {
+        u64_le reserved; // The mapping itself is returned through the inline output buffer
+    };
+    static_assert(sizeof(IoctlVsmsMapping) == 8, "IoctlVsmsMapping is incorrect size");
+
+    struct VsmsMappingEntry {
+        u8 gpc_index;
+        u8 tpc_index;
+    };
+    static_assert(sizeof(VsmsMappingEntry) == 2, "VsmsMappingEntry is incorrect size");
+
     struct IoctlZcullGetCtxSize {
         u32_le size;
     };
@@ -159,6 +176,8 @@ private:
     NvResult GetTPCMasks3(IoctlGpuGetTpcMasksArgs& params, std::span<u32> tpc_mask);
 
     NvResult GetActiveSlotMask(IoctlActiveSlotMask& params);
+    NvResult NumVsms(IoctlNumVsms& params);
+    NvResult VsmsMapping(IoctlVsmsMapping& params, std::span<VsmsMappingEntry> entries);
     NvResult ZCullGetCtxSize(IoctlZcullGetCtxSize& params);
     NvResult ZCullGetInfo(IoctlNvgpuGpuZcullGetInfoArgs& params);
     NvResult ZBCSetTable(IoctlZbcSetTable& params);

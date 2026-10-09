@@ -58,6 +58,8 @@ struct NSOHeader {
     std::array<SHA256Hash, 3> segment_hashes;
 
     bool IsSegmentCompressed(size_t segment_num) const;
+    /// Segments are compressed with ZBIC (zstd variant, SDK 22+) instead of LZ4
+    bool IsZbicCompressed() const;
 };
 static_assert(sizeof(NSOHeader) == 0x100, "NSOHeader has incorrect size.");
 static_assert(std::is_trivially_copyable_v<NSOHeader>, "NSOHeader must be trivially copyable.");
