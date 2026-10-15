@@ -130,6 +130,12 @@ void EmulationSession::InitializeGpuDriver(const std::string& hook_lib_dir,
             custom_driver_dir.c_str(), custom_driver_name.c_str(), file_redirect_dir_, nullptr);
     }
 
+    const bool custom_loaded = handle != nullptr;
+    if (custom_driver_name.size()) {
+        LOG_INFO(Frontend, "Custom GPU driver {}: {}", custom_driver_name,
+                 custom_loaded ? "loaded" : "failed, falling back to system driver");
+    }
+
     // Try to load the system driver.
     if (!handle) {
         handle = adrenotools_open_libvulkan(RTLD_NOW, featureFlags, nullptr, hook_lib_dir.c_str(),
@@ -509,8 +515,17 @@ void JNICALL Java_org_yuzu_yuzu_1emu_NativeLibrary_initializeGpuDriver(JNIEnv* e
     return access(KgslPath, F_OK) == 0;
 }
 
+// Mali (MediaTek/Exynos/etc). libadrenotools' custom driver path only swaps the library that
+// the system Vulkan loader pulls from the sphal namespace, so it also works for Mesa PanVK
+// (libvulkan_panfrost.so). The KGSL-only features (GPU mapping import) are not enabled here.
+[[maybe_unused]] static bool CheckMaliPresent() {
+    constexpr auto MaliPath{"/dev/mali0"};
+
+    return access(MaliPath, F_OK) == 0;
+}
+
 [[maybe_unused]] bool SupportsCustomDriver() {
-    return android_get_device_api_level() >= 28 && CheckKgslPresent();
+    return android_get_device_api_level() >= 28 && (CheckKgslPresent() || CheckMaliPresent());
 }
 
 jboolean JNICALL Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_supportsCustomDriverLoading(

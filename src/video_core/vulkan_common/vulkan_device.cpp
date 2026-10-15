@@ -428,8 +428,9 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
     const bool is_turnip = driver_id == VK_DRIVER_ID_MESA_TURNIP;
     const bool is_s8gen2 = device_id == 0x43050a01;
     const bool is_arm = driver_id == VK_DRIVER_ID_ARM_PROPRIETARY;
+    const bool is_panvk = driver_id == VK_DRIVER_ID_MESA_PANVK;
 
-    if ((is_mvk || is_qualcomm || is_turnip || is_arm) && !is_suitable) {
+    if ((is_mvk || is_qualcomm || is_turnip || is_arm || is_panvk) && !is_suitable) {
         LOG_WARNING(Render_Vulkan, "Unsuitable driver, continuing anyway");
     } else if (!is_suitable) {
         throw vk::Exception(VK_ERROR_INCOMPATIBLE_DRIVER);
@@ -527,6 +528,21 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         LOG_WARNING(Render_Vulkan, "ARM drivers have broken VK_EXT_extended_dynamic_state");
         RemoveExtensionFeature(extensions.extended_dynamic_state, features.extended_dynamic_state,
                                VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
+    }
+
+    if (is_panvk) {
+        // Bifrost (Mali-G52 etc.) has no BCn hardware. Experimental PanVK builds for kbase
+        // (e.g. panvk-mali-g52 v0.0.1-alpha) force-advertise BCn and transform feedback to get
+        // past DXVK's feature checks without implementing them. Use yuzu's software BCn decoder
+        // instead and don't rely on transform feedback.
+        if (features.features.textureCompressionBC) {
+            LOG_WARNING(Render_Vulkan, "PanVK: ignoring advertised BCn support, decoding on CPU");
+            features.features.textureCompressionBC = false;
+            features2.features.textureCompressionBC = false;
+        }
+        LOG_WARNING(Render_Vulkan, "PanVK: disabling VK_EXT_transform_feedback");
+        RemoveExtensionFeature(extensions.transform_feedback, features.transform_feedback,
+                               VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
     }
 
     if (is_nvidia) {
