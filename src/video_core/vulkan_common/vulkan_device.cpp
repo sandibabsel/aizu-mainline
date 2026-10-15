@@ -543,6 +543,16 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         LOG_WARNING(Render_Vulkan, "PanVK: disabling VK_EXT_transform_feedback");
         RemoveExtensionFeature(extensions.transform_feedback, features.transform_feedback,
                                VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
+        // yuzu's dynamic vertex input always binds all 32 Maxwell vertex buffers, but Bifrost
+        // only has 16 (maxVertexInputBindings), which is invalid usage. The static pipeline path
+        // only declares the bindings a pipeline actually uses.
+        if (extensions.vertex_input_dynamic_state &&
+            properties.properties.limits.maxVertexInputBindings < 32) {
+            LOG_WARNING(Render_Vulkan, "PanVK: disabling VK_EXT_vertex_input_dynamic_state");
+            RemoveExtensionFeature(extensions.vertex_input_dynamic_state,
+                                   features.vertex_input_dynamic_state,
+                                   VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+        }
     }
 
     if (is_nvidia) {

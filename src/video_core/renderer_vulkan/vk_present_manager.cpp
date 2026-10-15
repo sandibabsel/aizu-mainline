@@ -445,7 +445,12 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
     cmdbuf.End();
 
     const VkSemaphore present_semaphore = swapchain.CurrentPresentSemaphore();
-    const VkSemaphore render_semaphore = swapchain.CurrentRenderSemaphore();
+    // PanVK on Mali kbase cannot export a semaphore as a sync fd (no DRM syncobjs), which the
+    // Android WSI needs when vkQueuePresentKHR has wait semaphores, so nothing gets shown.
+    // Wait for the copy on the CPU instead and present without semaphores.
+    const bool cpu_wait_present = device.GetDriverID() == VK_DRIVER_ID_MESA_PANVK;
+    const VkSemaphore render_semaphore =
+        cpu_wait_present ? VK_NULL_HANDLE : swapchain.CurrentRenderSemaphore();
     const std::array wait_semaphores = {present_semaphore, *frame->render_ready};
 
     static constexpr std::array<VkPipelineStageFlags, 2> wait_stage_masks{
@@ -461,8 +466,8 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
         .pWaitDstStageMask = wait_stage_masks.data(),
         .commandBufferCount = 1,
         .pCommandBuffers = cmdbuf.address(),
-        .signalSemaphoreCount = 1U,
-        .pSignalSemaphores = &render_semaphore,
+        .signalSemaphoreCount = cpu_wait_present ? 0U : 1U,
+        .pSignalSemaphores = cpu_wait_present ? nullptr : &render_semaphore,
     };
 
     // Submit the image copy/blit to the swapchain
@@ -479,6 +484,10 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
             vk::Check(result);
             break;
         }
+    }
+
+    if (cpu_wait_present) {
+        frame->present_done.Wait();
     }
 
     // Present
