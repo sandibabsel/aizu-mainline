@@ -199,7 +199,11 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
                      render_pass_cache, buffer_cache, texture_cache, gpu.ShaderNotify()),
       accelerate_dma(buffer_cache, texture_cache, scheduler),
       fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler),
-      wfi_event(device.GetLogical().CreateEvent()) {
+      // PanVK on Mali kbase (no DRM syncobjs) fails vkCreateEvent with
+      // VK_ERROR_OUT_OF_HOST_MEMORY, so WaitForIdle uses a pipeline barrier there instead.
+      wfi_event(device.GetDriverID() == VK_DRIVER_ID_MESA_PANVK
+                    ? vk::Event{}
+                    : device.GetLogical().CreateEvent()) {
     scheduler.SetQueryCache(query_cache);
 }
 
@@ -737,10 +741,16 @@ void RasterizerVulkan::WaitForIdle() {
     query_cache.NotifyWFI();
 
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([event = *wfi_event, flags](vk::CommandBuffer cmdbuf) {
-        cmdbuf.SetEvent(event, flags);
-        cmdbuf.WaitEvents(event, flags, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, {}, {}, {});
-    });
+    if (!wfi_event) {
+        scheduler.Record([flags](vk::CommandBuffer cmdbuf) {
+            cmdbuf.PipelineBarrier(flags, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        });
+    } else {
+        scheduler.Record([event = *wfi_event, flags](vk::CommandBuffer cmdbuf) {
+            cmdbuf.SetEvent(event, flags);
+            cmdbuf.WaitEvents(event, flags, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, {}, {}, {});
+        });
+    }
     fence_manager.SignalOrdering();
 }
 
