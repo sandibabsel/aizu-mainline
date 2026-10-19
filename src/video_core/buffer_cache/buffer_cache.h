@@ -43,7 +43,7 @@ BufferCache<P>::BufferCache(Tegra::MaxwellDeviceMemoryManager& device_memory_, R
     critical_memory = static_cast<u64>(
         std::max(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
                  DEFAULT_CRITICAL_MEMORY));
-    if (device_local_memory < 2_GiB) {
+    if (device_local_memory < static_cast<s64>(2_GiB)) {
         // Small budgets (low RAM phones): scale with the budget instead of the fixed floors.
         minimum_memory = static_cast<u64>(device_local_memory * 3 / 10);
         critical_memory = static_cast<u64>(device_local_memory * 5 / 10);
