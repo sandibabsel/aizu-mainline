@@ -119,7 +119,12 @@ public:
     BlitImageHelper& blit_image_helper;
     RenderPassCache& render_pass_cache;
     std::optional<ASTCDecoderPass> astc_decoder_pass;
+    /// Created on the first BCn texture: building the encoder pipeline takes a while on some
+    /// drivers (about 30 s on PanVK for Mali-G52) and many games never use BCn.
+    BcnAstcEncodePass& GetBcnAstcPass();
     std::optional<BcnAstcEncodePass> bcn_astc_pass;
+    DescriptorPool* bcn_astc_descriptor_pool{};
+    ComputePassDescriptorQueue* bcn_astc_descriptor_queue{};
     std::unique_ptr<MSAACopyPass> msaa_copy_pass;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;

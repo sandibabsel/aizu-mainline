@@ -956,6 +956,11 @@ bool Device::ShouldBoostClocks() const {
 }
 
 bool Device::HasTimelineSemaphore() const {
+    if (GetDriverID() == VK_DRIVER_ID_MESA_PANVK) {
+        // PanVK on Mali kbase has no kernel syncobjs; its timeline semaphores are emulated on the
+        // CPU and have not been validated. Plain fences are what its tested paths use.
+        return false;
+    }
     if (GetDriverID() == VK_DRIVER_ID_QUALCOMM_PROPRIETARY ||
         GetDriverID() == VK_DRIVER_ID_MESA_TURNIP) {
         // Timeline semaphores do not work properly on all Qualcomm drivers.
