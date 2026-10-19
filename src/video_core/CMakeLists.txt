@@ -284,6 +284,8 @@ add_library(video_core STATIC
     texture_cache/util.h
     textures/astc.h
     textures/astc.cpp
+    textures/astc_encoder.h
+    textures/astc_encoder.cpp
     textures/bcn.cpp
     textures/bcn.h
     textures/decoders.cpp

@@ -68,6 +68,7 @@ set(SHADER_FILES
     vulkan_quad_indexed.comp
     vulkan_turbo_mode.comp
     vulkan_uint8.comp
+    vulkan_bcn_astc_encode.comp
 )
 
 find_program(GLSLANGVALIDATOR "glslangValidator")
