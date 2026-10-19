@@ -64,6 +64,13 @@ TextureCache<P>::TextureCache(Runtime& runtime_, Tegra::MaxwellDeviceMemoryManag
             std::max(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
                      DEFAULT_CRITICAL_MEMORY));
         minimum_memory = static_cast<u64>((device_local_memory - mem_threshold) / 2);
+        if (device_local_memory < 2_GiB) {
+            // Small budgets (low RAM phones): the fixed floors above would let the cache grow
+            // past the whole budget, scale with it instead.
+            expected_memory = static_cast<u64>(device_local_memory * 4 / 10);
+            critical_memory = static_cast<u64>(device_local_memory * 6 / 10);
+            minimum_memory = static_cast<u64>(device_local_memory / 4);
+        }
     } else {
         expected_memory = DEFAULT_EXPECTED_MEMORY + 512_MiB;
         critical_memory = DEFAULT_CRITICAL_MEMORY + 1_GiB;

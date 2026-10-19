@@ -12,6 +12,7 @@
 
 #include "common/assert.h"
 #include "common/literals.h"
+#include "common/memory_detect.h"
 #include "common/polyfill_ranges.h"
 #include "common/settings.h"
 #include "video_core/vulkan_common/nsight_aftermath_tracker.h"
@@ -1380,6 +1381,19 @@ void Device::CollectPhysicalMemoryInfo() {
     const s64 available_memory = static_cast<s64>(device_access_memory - device_initial_usage);
     device_access_memory = static_cast<u64>(std::max<s64>(
         std::min<s64>(available_memory - 8_GiB, 4_GiB), std::min<s64>(local_memory, 4_GiB)));
+
+    // Phones with little RAM (e.g. 4 GB): GPU memory is the same RAM the guest, the emulator and
+    // Android live in, and letting the caches grow to the heap size gets the app killed by the
+    // low memory killer. Keep the GPU caches to a third of the RAM there.
+    const u64 total_ram = Common::GetMemInfo().TotalPhysicalMemory;
+    if (total_ram != 0 && total_ram <= 6_GiB) {
+        const u64 cap = total_ram / 3;
+        if (device_access_memory > cap) {
+            LOG_INFO(Render_Vulkan, "Low RAM device ({} MiB): GPU cache budget {} -> {} MiB",
+                     total_ram >> 20, device_access_memory >> 20, cap >> 20);
+            device_access_memory = cap;
+        }
+    }
 }
 
 void Device::CollectToolingInfo() {
