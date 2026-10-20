@@ -110,13 +110,19 @@ public:
         // Prevent logs from exceeding a set maximum size in the event that log entries are spammed.
         const auto write_limit = Settings::values.extended_logging.GetValue() ? 1_GiB : 100_MiB;
         const bool write_limit_exceeded = bytes_written > write_limit;
-        if (entry.log_level >= Level::Error || write_limit_exceeded) {
+        // Also flush at least once a second: on Android the process is often killed (low memory
+        // killer, swipe away) without a chance to flush, which used to cut the log off at the
+        // last error.
+        const auto now = std::chrono::steady_clock::now();
+        const bool flush_due = now - last_flush >= std::chrono::seconds{1};
+        if (entry.log_level >= Level::Error || write_limit_exceeded || flush_due) {
             if (write_limit_exceeded) {
                 // Stop writing after the write limit is exceeded.
                 // Don't close the file so we can print a stacktrace if necessary
                 enabled = false;
             }
             file->Flush();
+            last_flush = now;
         }
     }
 
@@ -130,6 +136,7 @@ public:
     }
 
 private:
+    std::chrono::steady_clock::time_point last_flush{};
     std::unique_ptr<FS::IOFile> file;
     bool enabled = true;
     std::size_t bytes_written = 0;
