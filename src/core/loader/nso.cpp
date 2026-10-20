@@ -17,6 +17,7 @@
 #include "core/hle/kernel/k_page_table.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_thread.h"
+#include "core/hle/nvn/nvn_hook.h"
 #include "core/loader/nso.h"
 #include "core/memory.h"
 
@@ -178,6 +179,11 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
 
         std::copy(pi_header.begin() + sizeof(NSOHeader), pi_header.end(), patchable_section.data());
     }
+
+    // Report NVN procedure lookups to the host (see core/hle/nvn/nvn_hook.h).
+    Core::NvnHook::PatchModule(
+        std::span<u8>(program_image.data() + module_start, program_image.size() - module_start),
+        name, nso_header.build_id, load_base + module_start, load_into_process);
 
 #ifdef HAS_NCE
     // If we are computing the process code layout and using nce backend, patch.

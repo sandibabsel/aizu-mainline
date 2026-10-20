@@ -549,6 +549,7 @@ PROLOGUE_CPP = """
 #include "core/core.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/svc.h"
+#include "core/hle/nvn/nvn_hook.h"
 
 namespace Kernel::Svc {
 
@@ -598,7 +599,9 @@ void Call(Core::System& system, u32 imm) {
     kernel.CurrentPhysicalCore().SaveSvcArguments(process, args);
     kernel.EnterSVCProfile();
 
-    if (process.Is64Bit()) {
+    if (Core::NvnHook::IsHookSvc(imm)) {
+        Core::NvnHook::HandleSvc(system, imm, args);
+    } else if (process.Is64Bit()) {
         Call64(system, imm, args);
     } else {
         Call32(system, imm, args);

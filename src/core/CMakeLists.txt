@@ -379,6 +379,11 @@ add_library(core STATIC
     hle/kernel/svc_common.h
     hle/kernel/svc_results.h
     hle/kernel/svc_types.h
+    hle/nvn/nvn_hle.cpp
+    hle/nvn/nvn_hle.h
+    hle/nvn/nvn_hook.cpp
+    hle/nvn/nvn_hook.h
+    hle/nvn/nvn_mia_procs.h
     hle/result.h
     hle/service/acc/acc.cpp
     hle/service/acc/acc.h
