@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
 import android.content.BroadcastReceiver
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -167,6 +168,30 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener {
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // While in the foreground Android reports RUNNING_* levels before lmkd kills us.
+        val pressure = when (level) {
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL,
+            ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> 2
+
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
+            ComponentCallbacks2.TRIM_MEMORY_MODERATE -> 1
+
+            else -> 0
+        }
+        if (pressure > 0) {
+            NativeLibrary.reportMemoryPressure(pressure)
+        }
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        NativeLibrary.reportMemoryPressure(2)
     }
 
     override fun onResume() {

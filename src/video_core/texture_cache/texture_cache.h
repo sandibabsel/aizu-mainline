@@ -8,6 +8,7 @@
 #include <boost/container/small_vector.hpp>
 
 #include "common/alignment.h"
+#include "common/memory_pressure.h"
 #include "common/settings.h"
 #include "video_core/control/channel_state.h"
 #include "video_core/dirty_flags.h"
@@ -80,19 +81,27 @@ TextureCache<P>::TextureCache(Runtime& runtime_, Tegra::MaxwellDeviceMemoryManag
 
 template <class P>
 void TextureCache<P>::RunGarbageCollector() {
+    // Under host memory pressure (phones) shrink towards a half/three quarters of the budget.
+    const int pressure = Common::GetMemoryPressure();
+    const u64 expected = pressure >= 2   ? expected_memory / 2
+                         : pressure == 1 ? expected_memory / 4 * 3
+                                         : expected_memory;
+    const u64 critical = pressure >= 2   ? critical_memory / 2
+                         : pressure == 1 ? critical_memory / 4 * 3
+                                         : critical_memory;
     bool high_priority_mode = false;
     bool aggressive_mode = false;
     u64 ticks_to_destroy = 0;
     size_t num_iterations = 0;
 
     const auto Configure = [&](bool allow_aggressive) {
-        high_priority_mode = total_used_memory >= expected_memory;
-        aggressive_mode = allow_aggressive && total_used_memory >= critical_memory;
+        high_priority_mode = total_used_memory >= expected;
+        aggressive_mode = allow_aggressive && total_used_memory >= critical;
         ticks_to_destroy = aggressive_mode ? 10ULL : high_priority_mode ? 25ULL : 50ULL;
         num_iterations = aggressive_mode ? 40 : (high_priority_mode ? 20 : 10);
     };
-    const auto Cleanup = [this, &num_iterations, &high_priority_mode,
-                          &aggressive_mode](ImageId image_id) {
+    const auto Cleanup = [this, &num_iterations, &high_priority_mode, &aggressive_mode, expected,
+                          critical](ImageId image_id) {
         if (num_iterations == 0) {
             return true;
         }
@@ -124,14 +133,14 @@ void TextureCache<P>::RunGarbageCollector() {
         }
         UnregisterImage(image_id);
         DeleteImage(image_id, image.scale_tick > frame_tick + 5);
-        if (total_used_memory < critical_memory) {
+        if (total_used_memory < critical) {
             if (aggressive_mode) {
                 // Sink the aggresiveness.
                 num_iterations >>= 2;
                 aggressive_mode = false;
                 return false;
             }
-            if (high_priority_mode && total_used_memory < expected_memory) {
+            if (high_priority_mode && total_used_memory < expected) {
                 num_iterations >>= 1;
                 high_priority_mode = false;
             }
@@ -144,7 +153,7 @@ void TextureCache<P>::RunGarbageCollector() {
     lru_cache.ForEachItemBelow(frame_tick - ticks_to_destroy, Cleanup);
 
     // If pressure is still too high, prune aggressively.
-    if (total_used_memory >= critical_memory) {
+    if (total_used_memory >= critical) {
         Configure(true);
         lru_cache.ForEachItemBelow(frame_tick - ticks_to_destroy, Cleanup);
     }
@@ -156,7 +165,7 @@ void TextureCache<P>::TickFrame() {
     if (runtime.CanReportMemoryUsage()) {
         total_used_memory = runtime.GetDeviceMemoryUsage();
     }
-    if (total_used_memory > minimum_memory) {
+    if (total_used_memory > minimum_memory || Common::GetMemoryPressure() > 0) {
         RunGarbageCollector();
     }
     sentenced_images.Tick();

@@ -23,6 +23,7 @@
 
 #include "common/android/android_common.h"
 #include "common/common_types.h"
+#include "common/memory_pressure.h"
 #include "video_core/vulkan_common/vulkan_device.h"
 
 namespace {
@@ -124,6 +125,10 @@ private:
         line += fmt::format(" | free {}/{} MB", avail >> 10, total >> 10);
         if (swap_total != 0) {
             line += fmt::format(" swap {}/{}", swap_free >> 10, swap_total >> 10);
+        }
+        if (const int pressure = Common::GetMemoryPressure(); pressure > 0) {
+            // The GPU caches are being trimmed (see common/memory_pressure.h).
+            line += pressure >= 2 ? " [RAM KRITIS]" : " [RAM rendah]";
         }
         return line;
     }
@@ -313,6 +318,11 @@ extern "C" {
 
 jstring Java_org_yuzu_yuzu_1emu_NativeLibrary_getResourceStats(JNIEnv* env, jclass clazz) {
     return Common::Android::ToJString(env, g_sampler.Sample());
+}
+
+void Java_org_yuzu_yuzu_1emu_NativeLibrary_reportMemoryPressure(JNIEnv* env, jclass clazz,
+                                                                  jint level) {
+    Common::ReportMemoryPressure(level);
 }
 
 } // extern "C"

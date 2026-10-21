@@ -12,6 +12,7 @@
 #include "common/bit_util.h"
 #include "common/common_types.h"
 #include "common/literals.h"
+#include "common/memory_detect.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 #include "video_core/vulkan_common/vulkan_device.h"
@@ -41,6 +42,11 @@ size_t GetStreamBufferSize(const Device& device) {
         }
     } else {
         size = MAX_STREAM_BUFFER_SIZE;
+        // On phones this host visible buffer is plain RAM that stays allocated for the whole
+        // session; 64 MiB is still far more than a frame uploads on a 4 GB device.
+        if (Common::GetMemInfo().TotalPhysicalMemory <= 4608_MiB) {
+            size = MAX_STREAM_BUFFER_SIZE / 2;
+        }
     }
     return std::min(Common::AlignUp(size, MAX_ALIGNMENT), MAX_STREAM_BUFFER_SIZE);
 }

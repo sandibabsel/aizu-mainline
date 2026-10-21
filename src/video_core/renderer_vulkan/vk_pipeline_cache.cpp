@@ -13,6 +13,8 @@
 #include "common/cityhash.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
+#include "common/literals.h"
+#include "common/memory_detect.h"
 #include "common/microprofile.h"
 #include "common/thread_worker.h"
 #include "core/core.h"
@@ -265,6 +267,7 @@ Shader::RuntimeInfo MakeRuntimeInfo(std::span<const Shader::IR::Program> program
 }
 
 size_t GetTotalPipelineWorkers() {
+    using namespace Common::Literals;
     const size_t max_core_threads =
         std::max<size_t>(static_cast<size_t>(std::thread::hardware_concurrency()), 2ULL) - 1ULL;
 #ifdef ANDROID
@@ -272,6 +275,12 @@ size_t GetTotalPipelineWorkers() {
     constexpr size_t free_cores = 3ULL;
     if (max_core_threads <= free_cores) {
         return 1ULL;
+    }
+    // Every shader compile in flight holds the driver compiler's working memory (tens of MB on
+    // Mesa) and competes with the guest CPU threads for the few big cores. On 4 GB phones two
+    // workers keep the game smoother and further from the low memory killer.
+    if (Common::GetMemInfo().TotalPhysicalMemory <= 4608_MiB) {
+        return std::min<size_t>(max_core_threads - free_cores, 2ULL);
     }
     return max_core_threads - free_cores;
 #else

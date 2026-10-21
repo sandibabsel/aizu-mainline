@@ -8,6 +8,7 @@
 #include <memory>
 #include <numeric>
 
+#include "common/memory_pressure.h"
 #include "common/range_sets.inc"
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/guest_memory.h"
@@ -55,7 +56,11 @@ BufferCache<P>::~BufferCache() = default;
 
 template <class P>
 void BufferCache<P>::RunGarbageCollector() {
-    const bool aggressive_gc = total_used_memory >= critical_memory;
+    const int pressure = Common::GetMemoryPressure();
+    const u64 critical = pressure >= 2   ? critical_memory / 2
+                         : pressure == 1 ? critical_memory / 4 * 3
+                                         : critical_memory;
+    const bool aggressive_gc = total_used_memory >= critical;
     const u64 ticks_to_destroy = aggressive_gc ? 60 : 120;
     int num_iterations = aggressive_gc ? 64 : 32;
     const auto clean_up = [this, &num_iterations](BufferId buffer_id) {
@@ -100,7 +105,7 @@ void BufferCache<P>::TickFrame() {
     if (runtime.CanReportMemoryUsage()) {
         total_used_memory = runtime.GetDeviceMemoryUsage();
     }
-    if (total_used_memory >= minimum_memory) {
+    if (total_used_memory >= minimum_memory || Common::GetMemoryPressure() > 0) {
         RunGarbageCollector();
     }
     ++frame_tick;

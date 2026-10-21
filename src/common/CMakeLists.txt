@@ -89,6 +89,8 @@ add_library(common STATIC
     math_util.h
     memory_detect.cpp
     memory_detect.h
+    memory_pressure.cpp
+    memory_pressure.h
     microprofile.cpp
     microprofile.h
     microprofileui.h

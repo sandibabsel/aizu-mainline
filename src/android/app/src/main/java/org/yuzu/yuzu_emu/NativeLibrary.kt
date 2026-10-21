@@ -167,6 +167,12 @@ object NativeLibrary {
     external fun getResourceStats(): String
 
     /**
+     * Tells the GPU caches the system is short on RAM (0 = fine, 1 = low, 2 = critical) so they
+     * shrink before the low memory killer closes the app.
+     */
+    external fun reportMemoryPressure(level: Int)
+
+    /**
      * Returns the current CPU backend.
      */
     external fun getCpuBackend(): String
