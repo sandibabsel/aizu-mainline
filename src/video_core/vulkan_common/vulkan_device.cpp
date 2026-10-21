@@ -532,18 +532,24 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
     }
 
     if (is_panvk) {
-        // Bifrost (Mali-G52 etc.) has no BCn hardware. Experimental PanVK builds for kbase
-        // (e.g. panvk-mali-g52 v0.0.1-alpha) force-advertise BCn and transform feedback to get
-        // past DXVK's feature checks without implementing them. Use yuzu's software BCn decoder
-        // instead and don't rely on transform feedback.
-        if (features.features.textureCompressionBC) {
+        // Bifrost (Mali-G52 etc.) has no BCn hardware. Some experimental PanVK builds for kbase
+        // (e.g. panvk-mali-g52 v0.0.1-alpha) force-advertise BCn, geometry/tessellation and
+        // transform feedback to get past DXVK's feature checks without implementing them; an
+        // advertised BCn on Bifrost gives such a build away. Others (JimVulkan/mali-panvk)
+        // report BCn honestly and really implement transform feedback (emulated with compute).
+        const bool fake_features = features.features.textureCompressionBC;
+        if (fake_features) {
             LOG_WARNING(Render_Vulkan, "PanVK: ignoring advertised BCn support, decoding on CPU");
             features.features.textureCompressionBC = false;
             features2.features.textureCompressionBC = false;
+            LOG_WARNING(Render_Vulkan, "PanVK: disabling VK_EXT_transform_feedback");
+            RemoveExtensionFeature(extensions.transform_feedback, features.transform_feedback,
+                                   VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
+        } else {
+            LOG_INFO(Render_Vulkan, "PanVK: driver reports its features honestly, keeping "
+                                    "transform feedback ({})",
+                     extensions.transform_feedback ? "available" : "not available");
         }
-        LOG_WARNING(Render_Vulkan, "PanVK: disabling VK_EXT_transform_feedback");
-        RemoveExtensionFeature(extensions.transform_feedback, features.transform_feedback,
-                               VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
         // yuzu's dynamic vertex input always binds all 32 Maxwell vertex buffers, but Bifrost
         // only has 16 (maxVertexInputBindings), which is invalid usage. The static pipeline path
         // only declares the bindings a pipeline actually uses.
@@ -1384,10 +1390,11 @@ void Device::CollectPhysicalMemoryInfo() {
 
     // Phones with little RAM (e.g. 4 GB): GPU memory is the same RAM the guest, the emulator and
     // Android live in, and letting the caches grow to the heap size gets the app killed by the
-    // low memory killer. Keep the GPU caches to a third of the RAM there.
+    // low memory killer. Keep the GPU caches to a third of the RAM there, and to a quarter on
+    // 4 GB phones, where a UE4 game alone fills most of what Android leaves to the app.
     const u64 total_ram = Common::GetMemInfo().TotalPhysicalMemory;
     if (total_ram != 0 && total_ram <= 6_GiB) {
-        const u64 cap = total_ram / 3;
+        const u64 cap = total_ram <= 4608_MiB ? total_ram / 4 : total_ram / 3;
         if (device_access_memory > cap) {
             LOG_INFO(Render_Vulkan, "Low RAM device ({} MiB): GPU cache budget {} -> {} MiB",
                      total_ram >> 20, device_access_memory >> 20, cap >> 20);
