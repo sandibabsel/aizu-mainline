@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <array>
 #include <bitset>
 #include <chrono>
+#include <mutex>
 #include <optional>
 #include <thread>
 #include <unordered_set>
@@ -27,6 +29,11 @@
 namespace Vulkan {
 using namespace Common::Literals;
 namespace {
+// Live devices, newest last, for GetGpuMemoryStats (the frontend also creates short-lived
+// devices to query driver info while a game runs).
+std::mutex g_stats_mutex;
+std::vector<const Device*> g_stats_devices;
+
 namespace Alternatives {
 constexpr std::array STENCIL8_UINT{
     VK_FORMAT_D16_UNORM_S8_UINT,
@@ -782,10 +789,41 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
     };
 
     vk::Check(vmaCreateAllocator(&allocator_info, &allocator));
+
+    std::scoped_lock lock{g_stats_mutex};
+    g_stats_devices.push_back(this);
 }
 
 Device::~Device() {
+    {
+        std::scoped_lock lock{g_stats_mutex};
+        std::erase(g_stats_devices, this);
+    }
     vmaDestroyAllocator(allocator);
+}
+
+u64 Device::GetAllocatedMemory() const {
+    // Only reads VMA's atomic per-heap block counters, so it is safe next to the render thread.
+    std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets{};
+    vmaGetHeapBudgets(allocator, budgets.data());
+    const VkPhysicalDeviceMemoryProperties* props = nullptr;
+    vmaGetMemoryProperties(allocator, &props);
+    u64 total = 0;
+    for (u32 heap = 0; heap < props->memoryHeapCount; ++heap) {
+        total += budgets[heap].statistics.blockBytes;
+    }
+    return total;
+}
+
+bool GetGpuMemoryStats(u64& allocated, u64& budget) {
+    std::scoped_lock lock{g_stats_mutex};
+    if (g_stats_devices.empty()) {
+        return false;
+    }
+    const Device* const device = g_stats_devices.back();
+    allocated = device->GetAllocatedMemory();
+    budget = device->GetDeviceLocalMemory();
+    return true;
 }
 
 VkFormat Device::GetSupportedFormat(VkFormat wanted_format, VkFormatFeatureFlags wanted_usage,

@@ -67,6 +67,8 @@ struct Values {
                                             Settings::Category::Overlay};
     Settings::Setting<bool> show_performance_overlay{linkage, true, "show_performance_overlay",
                                                      Settings::Category::Overlay};
+    Settings::Setting<bool> show_resource_overlay{linkage, true, "show_resource_overlay",
+                                                  Settings::Category::Overlay};
     Settings::Setting<bool> show_thermal_overlay{linkage, false, "show_thermal_overlay",
                                                  Settings::Category::Overlay};
     Settings::Setting<bool> show_input_overlay{linkage, true, "show_input_overlay",

@@ -24,6 +24,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     DPAD_SLIDE("dpad_slide"),
     HAPTIC_FEEDBACK("haptic_feedback"),
     SHOW_PERFORMANCE_OVERLAY("show_performance_overlay"),
+    SHOW_RESOURCE_OVERLAY("show_resource_overlay"),
     SHOW_INPUT_OVERLAY("show_input_overlay"),
     TOUCHSCREEN("touchscreen"),
     SHOW_THERMAL_OVERLAY("show_thermal_overlay");

@@ -162,6 +162,11 @@ object NativeLibrary {
     external fun getPerfStats(): DoubleArray
 
     /**
+     * Returns RAM, CPU and GPU usage as overlay text (a few lines).
+     */
+    external fun getResourceStats(): String
+
+    /**
      * Returns the current CPU backend.
      */
     external fun getCpuBackend(): String

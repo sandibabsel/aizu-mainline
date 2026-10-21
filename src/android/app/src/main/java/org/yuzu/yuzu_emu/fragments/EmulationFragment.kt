@@ -64,6 +64,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private lateinit var emulationState: EmulationState
     private var emulationActivity: EmulationActivity? = null
     private var perfStatsUpdater: (() -> Unit)? = null
+    private var resourceStatsUpdater: (() -> Unit)? = null
     private var thermalStatsUpdater: (() -> Unit)? = null
 
     private var _binding: FragmentEmulationBinding? = null
@@ -372,6 +373,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
                 // Setup overlays
                 updateShowFpsOverlay()
+                updateResourceOverlay()
                 updateThermalOverlay()
             }
         }
@@ -405,6 +407,9 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             if (it && emulationViewModel.programChanged.value != -1) {
                 if (perfStatsUpdater != null) {
                     perfStatsUpdateHandler.removeCallbacks(perfStatsUpdater!!)
+                }
+                if (resourceStatsUpdater != null) {
+                    resourceStatsUpdateHandler.removeCallbacks(resourceStatsUpdater!!)
                 }
                 emulationState.changeProgram(emulationViewModel.programChanged.value)
                 emulationViewModel.setProgramChanged(-1)
@@ -510,6 +515,28 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             if (perfStatsUpdater != null) {
                 perfStatsUpdateHandler.removeCallbacks(perfStatsUpdater!!)
             }
+        }
+    }
+
+    private fun updateResourceOverlay() {
+        val showOverlay = BooleanSetting.SHOW_RESOURCE_OVERLAY.getBoolean()
+        binding.showResourceText.setVisible(showOverlay)
+        if (resourceStatsUpdater != null) {
+            resourceStatsUpdateHandler.removeCallbacks(resourceStatsUpdater!!)
+        }
+        if (showOverlay) {
+            resourceStatsUpdater = {
+                if (emulationViewModel.emulationStarted.value &&
+                    !emulationViewModel.isEmulationStopping.value
+                ) {
+                    val stats = NativeLibrary.getResourceStats()
+                    if (_binding != null) {
+                        binding.showResourceText.text = stats
+                    }
+                    resourceStatsUpdateHandler.postDelayed(resourceStatsUpdater!!, 1000)
+                }
+            }
+            resourceStatsUpdateHandler.post(resourceStatsUpdater!!)
         }
     }
 
@@ -672,6 +699,8 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         popup.menu.apply {
             findItem(R.id.menu_toggle_fps).isChecked =
                 BooleanSetting.SHOW_PERFORMANCE_OVERLAY.getBoolean()
+            findItem(R.id.menu_toggle_resources).isChecked =
+                BooleanSetting.SHOW_RESOURCE_OVERLAY.getBoolean()
             findItem(R.id.thermal_indicator).isChecked =
                 BooleanSetting.SHOW_THERMAL_OVERLAY.getBoolean()
             findItem(R.id.menu_rel_stick_center).isChecked =
@@ -690,6 +719,13 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     it.isChecked = !it.isChecked
                     BooleanSetting.SHOW_PERFORMANCE_OVERLAY.setBoolean(it.isChecked)
                     updateShowFpsOverlay()
+                    true
+                }
+
+                R.id.menu_toggle_resources -> {
+                    it.isChecked = !it.isChecked
+                    BooleanSetting.SHOW_RESOURCE_OVERLAY.setBoolean(it.isChecked)
+                    updateResourceOverlay()
                     true
                 }
 
@@ -1044,5 +1080,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     companion object {
         private val perfStatsUpdateHandler = Handler(Looper.myLooper()!!)
         private val thermalStatsUpdateHandler = Handler(Looper.myLooper()!!)
+        private val resourceStatsUpdateHandler = Handler(Looper.myLooper()!!)
     }
 }

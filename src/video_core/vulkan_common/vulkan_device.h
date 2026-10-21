@@ -630,6 +630,9 @@ public:
 
     u64 GetDeviceMemoryUsage() const;
 
+    /// Bytes of device memory currently allocated through VMA (all heaps).
+    u64 GetAllocatedMemory() const;
+
     u32 GetSetsPerPool() const {
         return sets_per_pool;
     }
@@ -838,5 +841,9 @@ private:
     /// Nsight Aftermath GPU crash tracker
     std::unique_ptr<NsightAftermathTracker> nsight_aftermath_tracker;
 };
+
+/// For the resource overlay: memory allocated by the newest live Device and its cache budget.
+/// Returns false when no device exists. Thread safe.
+bool GetGpuMemoryStats(u64& allocated, u64& budget);
 
 } // namespace Vulkan
